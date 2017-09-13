@@ -1,31 +1,71 @@
-import pandas as pd 
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load in 
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
-
-# Read in data from csv. Each passenger has the following information (one passenger per row)
-data = pd.read_csv("train.csv")
 
 #normalize a feature between 0 and 1
 def Norm(df,feature):
     max_value = df[feature].max()
     min_value = df[feature].min()
     return (df[feature] - min_value) / (max_value - min_value)
+    
+#parse data from the CSV, output an array of inputs and the expected output
+def parseData(rawData):
+    #Normalizing data
+    rawData['Sex'].replace(['female','male'],[0.0,1.0],inplace=True) # Code Female as 0, Male as 1
+    
+    rawData['Pclass'].replace([1,2,3],[0.0,.5,1.0],inplace=True)     # Upperclass 0, Middleclass .5, Lowerclass 1
+    rawData['Pclass'].fillna(.5,inplace=True)
+    
+    rawData['Age'] = Norm(rawData,'Age')
+    rawData['Age'].fillna(.5,inplace=True)
+    
+    rawData['SibSp'] = Norm(rawData,'SibSp')
+    rawData['SibSp'].fillna(.5,inplace=True)
+    
+    rawData['Parch'] = Norm(rawData,'Parch')
+    rawData['Parch'].fillna(.5,inplace=True)
+    
+    rawData['Fare'] = Norm(rawData,'Fare')
+    rawData['Fare'].fillna(.5,inplace=True)
+    
+    #Build our Input and Output 
+    inputs = []
+    outputs = []
+    for index,person in rawData.iterrows():
+        inputs.append([person['Sex'],person['Pclass'],person['Age'],person['SibSp'],person['Parch'],person['Fare']])
+        if 'Survived' in rawData:
+            outputs.append(person['Survived'])
+    return inputs, outputs
+        
+#Test the Accuracy of a given network
+def test(testInput, testOutput, network):
+    correct = 0
+    incorrect = 0
+    for i in range(0,len(testInput)):
+        answer = network.predict([testInput[i]])[0]
+        actual = testOutput[i]
+        if answer == actual:
+            correct+=1
+        else:
+            incorrect+=1
+           
+    return(correct/(correct+incorrect)*100)
 
-#Normalizing data
-data['Sex'].replace(['female','male'],[0.0,1.0],inplace=True) # Code Female as 0, Male as 1
-data['Pclass'].replace([1,2,3],[0.0,.5,1.0],inplace=True)     # Upperclass 0, Middleclass .5, Lowerclass 1
-data['Age'] = Norm(data,'Age')
-data['Age'].fillna(.5,inplace=True)
-data['SibSp'] = Norm(data,'SibSp')
-data['Parch'] = Norm(data,'Parch')
-data['Fare'] = Norm(data,'Fare')
+#Predict the survival of a person, given an array of people
+def predict(inputs,network):
+    prediction = []
+    for i in range(0,len(inputs)):
+        prediction.append(network.predict([inputs[i]])[0])
+    return prediction
 
-#Build our Input and Output 
-testInput = []
-testOutput = []
-for index,person in data.iterrows():
-    testInput.append([person['Sex'],person['Pclass'],person['Age'],person['SibSp'],person['Parch'],person['Fare']])
-    testOutput.append(person['Survived'])
+# Read in data from csv. Each passenger has the following information (one passenger per row)
+raw_training = pd.read_csv("../input/train.csv")
+raw_testing = pd.read_csv("../input/test.csv")
 
 #Create our Neural Net with 2 hidden layers
 clf = MLPClassifier(activation='relu', alpha=1e-05, batch_size='auto',
@@ -35,28 +75,22 @@ clf = MLPClassifier(activation='relu', alpha=1e-05, batch_size='auto',
        nesterovs_momentum=True, power_t=0.5, random_state=1, shuffle=True,
        solver='lbfgs', tol=0.0001, validation_fraction=0.1, verbose=False,
        warm_start=False)
-       
-#Fit our Neural Net weights
-clf.fit(testInput, testOutput)
 
+#Fetch our training data
+trainingInputs, trainingOutputs = parseData(raw_training)
 
-#Test the Accuracy
-def test(testInput, testOutput):
-    correct = 0
-    incorrect = 0
-    for i in range(0,len(testInput)):
-        answer = clf.predict([testInput[i]])[0]
-        actual = testOutput[i]
-        if answer == actual:
-            correct+=1
-        else:
-            incorrect+=1
-           
-    return(correct/(correct+incorrect)*100)
+#Fit our Neural Net weights using the training data
+clf.fit(trainingInputs, trainingOutputs)
+print("Training Accuracy: "+str(test(trainingInputs,trainingOutputs,clf))+"%")
 
-print("Accuracy: "+str(test(testInput,testOutput))+"%")
+#Fetch our testing data
+testingInputs, testingOutputes = parseData(raw_testing)
 
+print("Predictions:")
+print(predict(testingInputs,clf))
+    
 #https://pandas.pydata.org/pandas-docs/stable/generated/pandas.Series.map.html
+
 
 
 
