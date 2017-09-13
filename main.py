@@ -51,7 +51,7 @@ def test(testInput, testOutput, network):
            
     return(correct/(correct+incorrect)*100)
 
-#Predict the survival of a person, given an array of people
+#Predicts who will survive, given an array of people
 def predict(inputs,network):
     prediction = []
     for i in range(0,len(inputs)):
