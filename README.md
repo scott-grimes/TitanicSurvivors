@@ -1,2 +1,6 @@
 # TitanicSurvivors
-using machine learning to predict the survivors of the titanic crash
+Simple implementation of  sklearn's multi-layer perceptron network feature.
+
+Predict who survived the Titanic crash using information about each passenger on the ship. 
+
+
